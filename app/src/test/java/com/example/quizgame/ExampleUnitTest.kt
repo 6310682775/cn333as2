@@ -1,4 +1,4 @@
-package com.example.ass2
+package com.example.quizgame
 
 import org.junit.Test
 

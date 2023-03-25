@@ -1,4 +1,4 @@
-package com.example.ass2.ui.theme
+package com.example.quizgame.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle

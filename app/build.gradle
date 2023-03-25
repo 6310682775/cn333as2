@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.ass2'
+    namespace 'com.example.quizgame'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.ass2"
+        applicationId "com.example.quizgame"
         minSdk 24
         targetSdk 33
         versionCode 1
