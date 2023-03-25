@@ -1,14 +1,12 @@
 package com.example.quizgame.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.quizgame.data.Question
 import com.example.quizgame.data.questionBank
-import com.example.quizgame.ui.GameUiState
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,11 +60,17 @@ class GameViewModel : ViewModel() {
         if (answerIndex == _question.value?.answerIndex) {
             _score.value = (_score.value ?: 0) + 1
         }
+        clickCount()
         getNextQuestion()
     }
 
     fun isGameOver(): Boolean {
-        return questionBank.size == _uiState.value.clickTime;
+        _uiState.update { currentState ->
+            currentState.copy(
+                isFinished = true,
+            )
+        }
+        return questionBank.size == _uiState.value.clickTime
     }
 
     fun resetGame() {
@@ -75,9 +79,11 @@ class GameViewModel : ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 numQuestionsAsked = 0,
-                clickTime = 0
+                clickTime = 0,
+                isFinished = false,
             )
         }
+
     }
 
 

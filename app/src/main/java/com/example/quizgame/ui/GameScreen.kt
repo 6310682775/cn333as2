@@ -1,29 +1,27 @@
 package com.example.quizgame.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.viewModels
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-//import com.example.quizgame.data.Question
-//import com.example.quizgame.data.questionBank
+
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.collectAsState
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 
 
-import androidx.lifecycle.ViewModel
+
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -33,8 +31,7 @@ import com.example.quizgame.R
 import com.example.quizgame.data.Question
 
 import com.example.quizgame.ui.theme.QuizGameTheme
-import kotlin.reflect.KProperty
-import androidx.lifecycle.ViewModel as ViewModel1
+
 
 sealed class Screen(val route: String){
     object Home: Screen("home")
@@ -44,35 +41,49 @@ sealed class Screen(val route: String){
 
 @Composable
 fun GameScreen(
-    modifier: Modifier = Modifier,
-    //gameViewModel: GameViewModel = viewModel()
     gameViewModel: GameViewModel = viewModel()
-
 ) {
+
+    val gameUiState by gameViewModel.uiState.collectAsState()
     val question: Question? by gameViewModel.question.observeAsState(null)
     val score: Int? by gameViewModel.score.observeAsState(null)
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "home") {
-        composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
-        }
-        composable(Screen.QuizScreen.route) {
-            QuizScreen(navController = navController, question = question,
-                score = score ?: 0
-            ){ answerIndex ->
-                gameViewModel.submitAnswer(answerIndex)
+
+    if (!gameUiState.isFinished){
+
+        NavHost(navController, startDestination = "home") {
+            composable(Screen.Home.route) {
+                HomeScreen(navController = navController)
+            }
+
+            composable(Screen.QuizScreen.route) {
+                GameStatus(questionCount = gameUiState.clickTime,score = score ?: 0)
+
+                QuizScreen(navController = navController, question = question,
+                    score = score ?: 0
+                ){ answerIndex ->
+                    gameViewModel.submitAnswer(answerIndex)
+                }
+            }
+            composable(Screen.GameOver.route) {
+                GameOverScreen(navController = navController, score = score ?: 0,onPlayAgain = {
+                    gameViewModel.resetGame()
+                })
             }
         }
-        composable(Screen.GameOver.route) {
-            GameOverScreen(navController = navController, score = score ?: 0)
-        }
     }
+    else{
+        GameOverScreen(navController = navController, score = score ?: 0,
+        onPlayAgain = {
+            gameViewModel.resetGame()
+        }
+    )}
 }
 
 
 
 @Composable
-fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun HomeScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -97,6 +108,32 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
 
 }
 
+@Composable
+fun GameStatus(
+    questionCount: Int,
+    score: Int,
+    modifier: Modifier = Modifier,
+) {
+    Spacer(modifier.height(100.dp))
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(30.dp)
+            .size(64.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.question_count, questionCount ),
+            fontSize = 18.sp,
+        )
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.End),
+            text = "Score: $score",
+            fontSize = 18.sp
+        )
+    }
+}
 
 @Composable
 fun QuizScreen(gameViewModel: GameViewModel = viewModel()
@@ -108,6 +145,7 @@ fun QuizScreen(gameViewModel: GameViewModel = viewModel()
         verticalArrangement = Arrangement.Center
     ) {
         Image(
+
             painter = painterResource(id = R.drawable.party),
             contentDescription = stringResource(id = R.string.party_content_description)
         )
@@ -120,7 +158,7 @@ fun QuizScreen(gameViewModel: GameViewModel = viewModel()
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             val shuffledOptions = question.options.shuffled() // Shuffle the options
-            shuffledOptions.forEachIndexed { index, option ->
+            shuffledOptions.forEachIndexed { _, option ->
                 AnswerOption(
                     option = option,
                     isSelected = false,
@@ -135,11 +173,7 @@ fun QuizScreen(gameViewModel: GameViewModel = viewModel()
                 )
             }
         }
-        Text(
-            text = "Score: $score",
-            style = MaterialTheme.typography.h5,
-            modifier = Modifier.padding(top = 16.dp)
-        )
+
     }
 
 
@@ -147,7 +181,7 @@ fun QuizScreen(gameViewModel: GameViewModel = viewModel()
 
 
 @Composable
-private fun GameOverScreen(gameViewModel: GameViewModel = viewModel(),navController: NavController, score: Int) {
+private fun GameOverScreen(navController: NavController, score: Int, onPlayAgain: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -167,7 +201,7 @@ private fun GameOverScreen(gameViewModel: GameViewModel = viewModel(),navControl
         )
         Button(
             onClick = {
-                gameViewModel.resetGame()
+                onPlayAgain()
                 navController.navigate("quizScreen")
             },
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -178,8 +212,8 @@ private fun GameOverScreen(gameViewModel: GameViewModel = viewModel(),navControl
 }
 
 @Composable
-fun AnswerOption(modifier: Modifier = Modifier,
-                 gameViewModel: GameViewModel = viewModel(),option: String, isSelected: Boolean, isEnabled: Boolean, onClick: () -> Unit) {
+fun AnswerOption(
+                 option: String, isSelected: Boolean, isEnabled: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically

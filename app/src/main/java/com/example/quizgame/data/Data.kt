@@ -37,8 +37,8 @@ val questionBank = listOf(
         0
     ),
     Question(
-        "What is the largest living animal on Earth?",
-        listOf("African elephant", "Blue whale", "Polar bear", "Hippopotamus"),
+        "Which of the following animals has the longest lifespan?",
+        listOf("Elephant", "Tortoise", "Bowhead Whale", "Macaw"),
         1
     ),
     Question(
